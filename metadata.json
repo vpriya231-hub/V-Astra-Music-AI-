@@ -1,0 +1,8 @@
+{
+  "name": "V-Astra Music AI",
+  "description": "An AI-powered music generation studio using Google's Lyria model to create high-fidelity 30-second audio tracks from text prompts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
