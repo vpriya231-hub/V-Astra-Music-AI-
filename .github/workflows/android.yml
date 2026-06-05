@@ -1,0 +1,78 @@
+name: Build Android APK and AAB
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Android App
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: |
+          npm ci || npm install
+          # Explicitly ensure Capacitor CLI, Core and Android SDK bindings are present
+          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
+
+      - name: Build Web Application
+        run: npm run build
+        env:
+          NODE_ENV: production
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'placeholder' }}
+          HF_KEY: ${{ secrets.HF_KEY || 'placeholder' }}
+
+      - name: Initialize & Sync Capacitor Android Platform
+        run: |
+          npx cap init "V-Astra Music AI" "com.vastra.musicai" --web-dir=dist || true
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
+          npx cap sync android
+
+      - name: Set up Java Development Kit (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Grant Execute Permission to Gradlew
+        run: chmod +x android/gradlew
+
+      - name: Build Release APK
+        run: |
+          cd android
+          ./gradlew assembleRelease
+
+      - name: Build Release AAB (Android App Bundle)
+        run: |
+          cd android
+          ./gradlew bundleRelease
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: v-astra-release-apk
+          path: android/app/build/outputs/apk/release/*.apk
+          retention-days: 7
+
+      - name: Upload AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: v-astra-release-aab
+          path: android/app/build/outputs/bundle/release/*.aab
+          retention-days: 7
