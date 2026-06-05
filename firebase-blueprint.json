@@ -10,15 +10,34 @@
         "genre": { "type": "string", "description": "The selected genre" },
         "lyrics": { "type": "string", "description": "The generated lyrics" },
         "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
-        "audioData": { "type": "string", "description": "Base64 encoded audio data (Note: 1MB limit check)" }
+        "audioUrl": { "type": "string", "description": "Blob URL or permanent storage URL" }
       },
       "required": ["userId", "prompt", "genre", "createdAt"]
+    },
+    "UserPlan": {
+      "title": "User Subscription Plan",
+      "description": "Subscription tier details and remaining quotas for music generation",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the user" },
+        "tier": { "type": "string", "enum": ["free", "plus", "pro", "ultra"], "description": "The active subscription tier" },
+        "dailyGenerations": { "type": "integer", "description": "Count of tracks generated on the current day" },
+        "monthlyGenerations": { "type": "integer", "description": "Count of tracks generated in the current month" },
+        "lastGenerationDate": { "type": "string", "description": "Date of the last generation (YYYY-MM-DD)" },
+        "lastGenerationMonth": { "type": "string", "description": "Month of the last generation (YYYY-MM)" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last updated timestamp" }
+      },
+      "required": ["userId", "tier", "dailyGenerations", "monthlyGenerations", "lastGenerationDate", "lastGenerationMonth", "updatedAt"]
     }
   },
   "firestore": {
     "tracks": {
       "schema": "Track",
       "description": "Collection of user-generated tracks"
+    },
+    "userProfiles": {
+      "schema": "UserPlan",
+      "description": "Collection of user subscription tiers and limits"
     }
   }
 }

@@ -45,10 +45,19 @@ service cloud.firestore {
       return isValidTrackBase(data);
     }
 
+    // Validation helper for UserPlan entity
+    function isValidUserPlan(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.tier is string && (data.tier == 'free' || data.tier == 'plus' || data.tier == 'pro' || data.tier == 'ultra') &&
+             data.dailyGenerations is int && data.dailyGenerations >= 0 &&
+             data.monthlyGenerations is int && data.monthlyGenerations >= 0 &&
+             data.lastGenerationDate is string && data.lastGenerationDate.size() <= 64 &&
+             data.lastGenerationMonth is string && data.lastGenerationMonth.size() <= 64;
+    }
+
     match /tracks/{trackId} {
-      // Allow general read for sharing (individual track lookup)
-      // For listing, force user to filter by userId
-      allow get: if isValidId(trackId); 
+      // Allow individual track lookup only for signed-in users
+      allow get: if isSignedIn() && isValidId(trackId); 
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
 
       allow create: if isSignedIn() && isValidId(trackId) && isValidTrackCreate(incoming());
@@ -61,6 +70,12 @@ service cloud.firestore {
                       incoming().diff(existing()).affectedKeys().hasOnly(['prompt', 'genre', 'lyrics', 'audioUrl']);
       
       allow delete: if isOwner(existing().userId) && isValidId(trackId);
+    }
+
+    match /userProfiles/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUserPlan(incoming()) && incoming().updatedAt == request.time;
+      allow update: if isOwner(userId) && isValidUserPlan(incoming()) && incoming().updatedAt == request.time;
     }
   }
 }
